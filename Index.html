@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iran — FIFA World Cup 2026 Fan Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --iran-green:#239F40; --iran-red:#DA0000;
+    --bg:#0c0d10; --panel:#15171c; --panel-2:#1c1f26;
+    --border:#262a33; --text:#e7e9ee; --muted:#8a8f9c;
+    --good:#4ade80; --warn:#facc15; --bad:#f87171; --accent:#60a5fa;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; }
+  .wrap { max-width:1240px; margin:0 auto; padding:32px 24px 80px; }
+
+  .hero {
+    background: linear-gradient(180deg, rgba(35,159,64,.08), rgba(218,0,0,.08) 100%),
+                radial-gradient(1200px 200px at 70% 0, rgba(35,159,64,.25), transparent), var(--panel);
+    border:1px solid var(--border); border-radius:14px; padding:28px 30px;
+    margin-bottom:24px; position:relative; overflow:hidden;
+  }
+  .hero-flag { position:absolute; right:30px; top:30px; width:84px; height:56px;
+    border-radius:6px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,.4);
+    display:flex; flex-direction:column; }
+  .hero-flag > div { flex:1; }
+  .hero-flag > div:nth-child(1) { background:var(--iran-green); }
+  .hero-flag > div:nth-child(2) { background:#fff; }
+  .hero-flag > div:nth-child(3) { background:var(--iran-red); }
+  .hero h1 { margin:0 0 4px; font-size:26px; font-weight:700; letter-spacing:-.4px; }
+  .hero .sub { color:var(--muted); font-size:14px; }
+  .hero .stats { display:flex; gap:24px; margin-top:18px; flex-wrap:wrap; }
+  .stat { background:rgba(255,255,255,.03); border:1px solid var(--border);
+    border-radius:10px; padding:14px 18px; min-width:180px; }
+  .stat .lbl { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.6px; }
+  .stat .val { font-size:24px; font-weight:700; margin-top:4px; }
+  .stat .val.green { color:var(--good); }
+  .stat .val.yellow { color:var(--warn); }
+  .stat .sub2 { color:var(--muted); font-size:12px; margin-top:2px; }
+
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted);
+    margin:36px 0 14px; font-weight:600; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:900px) { .grid-2, .grid-3 { grid-template-columns:1fr; } }
+
+  .match-card { background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .match-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .team-code { background:rgba(255,255,255,.06); padding:4px 8px; border-radius:5px;
+    font-family:ui-monospace, SFMono-Regular, monospace; font-size:12px; border:1px solid var(--border); }
+  .team-code.iran { background:rgba(35,159,64,.18); border-color:rgba(35,159,64,.5); color:#a7f3d0; }
+  .vs { color:var(--muted); font-size:12px; }
+  .venue-line { color:var(--muted); font-size:13px; display:flex; gap:10px; align-items:center; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px;
+    font-size:11px; background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--muted); }
+  .pill.iran { background:rgba(35,159,64,.12); border-color:rgba(35,159,64,.35); color:#a7f3d0; }
+
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.6px; }
+  tbody tr:hover { background:rgba(255,255,255,.02); }
+  td.num { font-variant-numeric:tabular-nums; text-align:right; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; }
+  .badge.tier-1 { background:rgba(74,222,128,.15); color:#86efac; }
+  .badge.tier-2 { background:rgba(250,204,21,.15); color:#fde047; }
+  .badge.tier-3 { background:rgba(248,113,113,.15); color:#fca5a5; }
+
+  /* Paths */
+  .paths-wrap { display:flex; flex-direction:column; gap:10px; }
+  .path-card { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color .2s; }
+  .path-card:hover { border-color:rgba(96,165,250,.35); }
+  .path-card.expanded { border-color:rgba(96,165,250,.5); }
+  .path-header { display:grid;
+    grid-template-columns:46px 1fr 200px 200px 110px 24px;
+    gap:14px; align-items:center; padding:14px 16px; cursor:pointer; user-select:none; }
+  @media (max-width:1100px) { .path-header { grid-template-columns:46px 1fr 60px; row-gap:8px; }
+    .path-header > *:nth-child(3), .path-header > *:nth-child(4), .path-header > *:nth-child(5) { grid-column:span 2; } }
+  .path-rank { color:var(--muted); font-family:ui-monospace,monospace; font-weight:700; font-size:13px; text-align:center; }
+  .path-main .opp { font-size:15px; font-weight:600; }
+  .path-main .opp-meta { color:var(--muted); font-weight:normal; font-size:12px; }
+  .path-main .finish { color:var(--muted); font-size:12px; margin-top:2px; }
+  .path-r32 { background:rgba(255,255,255,.03); border:1px solid var(--border); padding:6px 10px; border-radius:6px; font-size:11.5px; }
+  .path-r16 { background:rgba(35,159,64,.08); border:1px solid rgba(35,159,64,.25); padding:6px 10px; border-radius:6px; font-size:11.5px; color:#bbf7d0; }
+  .path-prob { text-align:right; }
+  .path-prob .pct { font-size:18px; font-weight:700; }
+  .path-prob .pct.high { color:var(--good); }
+  .path-prob .pct.mid { color:var(--warn); }
+  .path-prob .pct.low { color:var(--muted); }
+  .path-prob .detail { font-size:10px; color:var(--muted); margin-top:2px; }
+  .path-chevron { color:var(--muted); font-size:18px; transition:transform .25s; text-align:center; }
+  .path-card.expanded .path-chevron { transform:rotate(180deg); color:var(--accent); }
+  .path-body { padding:0 16px 18px; display:none; }
+  .path-card.expanded .path-body { display:block; animation:reveal .25s ease; }
+  @keyframes reveal { from { opacity:0; transform:translateY(-4px);} to { opacity:1; transform:none;} }
+
+  .chain { background:rgba(0,0,0,.18); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+  .chain h4 { margin:0 0 12px; font-size:11.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
+  .chain-step { display:grid; grid-template-columns:30px 1fr 80px 220px; gap:12px; align-items:center; padding:6px 0; font-size:13.5px; }
+  .chain-step .op { color:var(--muted); font-family:ui-monospace,monospace; text-align:center; font-size:16px; }
+  .chain-step .label { color:var(--text); }
+  .chain-step .label .why { color:var(--muted); font-size:11.5px; margin-top:2px; }
+  .chain-step .pct { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; color:#cbd5e1; }
+  .chain-bar { background:rgba(255,255,255,.06); border-radius:4px; height:8px; overflow:hidden; }
+  .chain-bar > div { height:100%; background:linear-gradient(90deg, #60a5fa, #4ade80); border-radius:4px; }
+  .chain-total { display:grid; grid-template-columns:30px 1fr 80px 220px; gap:12px;
+    margin-top:8px; padding-top:10px; border-top:1px dashed var(--border);
+    font-size:14.5px; align-items:center; }
+  .chain-total .op { text-align:center; color:#60a5fa; font-weight:600; }
+  .chain-total .pct { color:#a7f3d0; font-weight:700; }
+
+  .group-mini { margin-top:14px; }
+  .group-mini h4 { margin:0 0 8px; font-size:11.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
+  .group-mini h4 .role { color:#a7f3d0; }
+  .gm-row { display:grid; grid-template-columns:140px 1fr; gap:10px; align-items:center; padding:5px 0; font-size:12.5px; }
+  .gm-row .gm-name { color:var(--text); font-size:13px; }
+  .gm-row .gm-name.opp { color:#a7f3d0; font-weight:600; }
+  .gm-row .gm-name .gm-rank { color:var(--muted); font-weight:normal; font-size:11px; margin-left:6px; }
+  .gm-stack { display:flex; height:14px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.04); border:1px solid var(--border); }
+  .gm-stack > div { height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:10px; color:rgba(255,255,255,.85); font-variant-numeric:tabular-nums; }
+  .gm-stack > .p1 { background:#239F40; }     /* 1st */
+  .gm-stack > .p2 { background:#4ade80; }     /* 2nd */
+  .gm-stack > .p3 { background:#facc15; color:#111;}     /* 3rd — qualifying role highlighted */
+  .gm-stack > .p4 { background:#7f1d1d; }     /* 4th */
+  .gm-stack > .p3.role { box-shadow:inset 0 0 0 2px #fff; }
+  .gm-legend { font-size:11px; color:var(--muted); display:flex; gap:14px; margin-top:6px; }
+  .gm-legend .sw { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:4px; }
+
+  .filter-bar { display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
+  .filter-bar button { background:var(--panel-2); color:var(--text); border:1px solid var(--border);
+    padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .filter-bar button.active { border-color:var(--accent); color:var(--accent); }
+  .filter-bar input { background:var(--panel-2); color:var(--text); border:1px solid var(--border);
+    padding:6px 12px; border-radius:6px; font-size:13px; width:200px; }
+  .filter-bar .right { margin-left:auto; color:var(--muted); font-size:12px; }
+
+  .callout { background: linear-gradient(135deg, rgba(35,159,64,.10), rgba(218,0,0,.10));
+    border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+  .callout h3 { margin:0 0 8px; font-size:14px; color:var(--text); }
+  .callout p { margin:4px 0; color:var(--muted); font-size:13px; }
+  .callout .key { color:var(--text); font-weight:600; }
+  .callout .seattle { color:#7dd3fc; }
+  .callout .atlanta { color:#fca5a5; }
+
+  .chart-box { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  details { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-top:14px; }
+  details summary { cursor:pointer; color:var(--text); font-size:13px; user-select:none; }
+  details p, details li { color:var(--muted); font-size:13px; line-height:1.6; }
+  details code { background:rgba(255,255,255,.06); padding:1px 5px; border-radius:3px; font-size:12px; }
+  details .math { background:rgba(96,165,250,.05); border-left:2px solid var(--accent);
+    padding:8px 12px; margin:8px 0; font-family:ui-monospace,monospace; font-size:12.5px; color:#cbd5e1; }
+  footer { color:var(--muted); font-size:12px; margin-top:30px; text-align:center; }
+
+  .nav { display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:0; }
+  .nav button { background:transparent; color:var(--muted); border:0; padding:10px 16px; cursor:pointer;
+    font-size:14px; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .nav button.active { color:var(--text); border-bottom-color:var(--iran-green); }
+  .nav button:hover { color:var(--text); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; animation:fade .2s ease; }
+  @keyframes fade { from { opacity:0; transform:translateY(2px);} to { opacity:1; transform:none;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-flag" title="Flag of Iran"><div></div><div></div><div></div></div>
+    <h1>Team Melli at the 2026 FIFA World Cup</h1>
+    <div class="sub">Group G &middot; Iran with Belgium, Egypt, New Zealand &middot; FIFA rank #20 (1,615 pts)</div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">Reaches R16</div>
+        <div class="val green" id="stat-total">—</div>
+        <div class="sub2">Via 1st OR 2nd place</div></div>
+      <div class="stat"><div class="lbl">Via winning Group G</div>
+        <div class="val yellow" id="stat-via-1st">—</div>
+        <div class="sub2">→ Seattle R32 + Seattle R16</div></div>
+      <div class="stat"><div class="lbl">Via runner-up</div>
+        <div class="val" id="stat-via-2nd">—</div>
+        <div class="sub2">→ Dallas R32 + Atlanta R16</div></div>
+      <div class="stat"><div class="lbl">Most likely path</div>
+        <div class="val" id="stat-top-opp">—</div>
+        <div class="sub2" id="stat-top-detail">—</div></div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="active" data-tab="schedule">Schedule</button>
+    <button data-tab="group">Group G</button>
+    <button data-tab="paths">Paths to R16</button>
+    <button data-tab="tickets">Ticket Decision</button>
+    <button data-tab="method">Methodology</button>
+  </div>
+
+  <!-- TAB: SCHEDULE -->
+  <div class="tab-pane active" id="tab-schedule">
+    <h2>Iran &mdash; Group Stage Matches</h2>
+    <div class="grid-3" id="iran-matches"></div>
+    <h2>Other Group G Matches (Worth Watching for Tiebreakers)</h2>
+    <div class="grid-3" id="other-matches"></div>
+  </div>
+
+  <!-- TAB: GROUP G -->
+  <div class="tab-pane" id="tab-group">
+    <h2>Group G Profile (April 2026 FIFA Ranking)</h2>
+    <div class="panel">
+      <table id="group-table">
+        <thead><tr>
+          <th>Team</th><th class="num">FIFA Rank</th><th class="num">Points</th>
+          <th>Confederation</th><th>Strength Tier</th>
+          <th>Win prob vs Iran (90 min, no draws)</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <h2>Iran's Group Finish Distribution (80,000 simulations)</h2>
+    <div class="chart-box" style="height:280px;"><canvas id="finish-chart"></canvas></div>
+  </div>
+
+  <!-- TAB: PATHS -->
+  <div class="tab-pane" id="tab-paths">
+    <h2>Every Path Iran Can Take to the Round of 16</h2>
+    <div class="callout">
+      <p>Each row is one specific way Iran can reach the R16. <span class="key">Click any row</span> to expand the opponent's qualification chain &mdash; what had to happen for that opponent to end up facing Iran, and how probable each step is.</p>
+      <p>Sorted <span class="key">least likely &rarr; most likely</span>. Path probability = P(Iran finishes that group position) &times; P(opponent reaches Iran's R32 slot) &times; P(Iran wins R32).</p>
+    </div>
+    <div class="filter-bar">
+      <button data-filter="all" class="active">All 24 paths</button>
+      <button data-filter="1st">Iran 1st only (20)</button>
+      <button data-filter="2nd">Iran 2nd only (4)</button>
+      <input id="search-input" type="text" placeholder="Filter by opponent name…">
+      <span class="right" id="path-count"></span>
+    </div>
+    <div class="paths-wrap" id="paths-list"></div>
+  </div>
+
+  <!-- TAB: TICKETS -->
+  <div class="tab-pane" id="tab-tickets">
+    <h2>Ticket Decision Tree</h2>
+    <div class="callout">
+      <h3>Your conditional R16 tickets need to be in one of two cities</h3>
+      <p>If Iran <span class="key seattle">wins Group G</span> &rarr; R16 match is <span class="key seattle">Lumen Field, Seattle</span>, Jul 6, 8:00 PM ET (5:00 PM PT).</p>
+      <p>If Iran <span class="key atlanta">finishes 2nd</span> &rarr; R16 match is <span class="key atlanta">Mercedes-Benz Stadium, Atlanta</span>, Jul 7, 12:00 PM ET.</p>
+      <p style="margin-top:10px;">Bracket locks <span class="key">June 27</span>. Iran's group finish is decided after their final group match on <span class="key">June 26 (Egypt vs Iran, Seattle)</span>. You have ~<span class="key">8&ndash;10 days</span> to confirm tickets.</p>
+    </div>
+    <div class="grid-2">
+      <div class="panel" style="border-color:rgba(125,211,252,.3);">
+        <h3 style="margin:0 0 14px; color:#7dd3fc;">Scenario A — Iran wins Group G</h3>
+        <p style="color:var(--muted); margin:6px 0;">Probability: <span class="key" id="ticket-1st-prob">—</span></p>
+        <table style="margin-top:8px;">
+          <tr><th>R32</th><td>M82 — Lumen Field, Seattle<br><span style="color:var(--muted)">Jul 1, 16:00 ET (13:00 PT)</span></td></tr>
+          <tr><th>Opponent</th><td>Best 3rd-place from Group A/E/H/I/J<br><span style="color:var(--muted)">Most likely: Czechia, South Africa, Korea Republic</span></td></tr>
+          <tr><th>R16 (if win)</th><td>M94 — Lumen Field, Seattle<br><span style="color:var(--muted)">Jul 6, 20:00 ET (17:00 PT)</span></td></tr>
+          <tr><th>R16 opponent</th><td>Winner of (Group D winner vs best 3rd B/E/F/I/J)<br><span style="color:var(--muted)">Likely USA, Türkiye, or Germany</span></td></tr>
+        </table>
+        <p style="color:var(--muted); margin-top:14px; font-size:13px;">
+          <strong>Travel note:</strong> Same stadium R32 &rarr; R16, 5 days apart. Single lodging. DC&rarr;SEA is ~6 hr direct.
+        </p>
+      </div>
+      <div class="panel" style="border-color:rgba(252,165,165,.3);">
+        <h3 style="margin:0 0 14px; color:#fca5a5;">Scenario B — Iran 2nd in Group G</h3>
+        <p style="color:var(--muted); margin:6px 0;">Probability: <span class="key" id="ticket-2nd-prob">—</span></p>
+        <table style="margin-top:8px;">
+          <tr><th>R32</th><td>AT&amp;T Stadium, Arlington/Dallas<br><span style="color:var(--muted)">Jul 3, 14:00 ET</span></td></tr>
+          <tr><th>Opponent</th><td>Runner-up of Group D<br><span style="color:var(--muted)">Most likely Türkiye, Australia, or USA</span></td></tr>
+          <tr><th>R16 (if win)</th><td>Mercedes-Benz Stadium, Atlanta<br><span style="color:var(--muted)">Jul 7, 12:00 ET</span></td></tr>
+          <tr><th>R16 opponent</th><td>Winner of (Group J winner vs Group H runner-up)<br><span style="color:var(--muted)">Likely Argentina or Spain/Uruguay</span></td></tr>
+        </table>
+        <p style="color:var(--muted); margin-top:14px; font-size:13px;">
+          <strong>Travel note:</strong> Dallas then Atlanta — ~2 hr direct flight. Two hotel bookings.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: METHODOLOGY -->
+  <div class="tab-pane" id="tab-method">
+    <h2>How These Numbers Are Computed</h2>
+    <div class="panel">
+      <p style="color:var(--text); line-height:1.7; margin:0 0 6px;">
+        <strong style="color:var(--text)">Monte Carlo simulation, 80,000 runs.</strong> Every run plays out the entire group stage for all 12 groups, then resolves Iran's specific R32 matchup using FIFA's published bracket rules. The simulation is deterministic given the seed (<code>random.seed(20260614)</code>).
+      </p>
+      <details open>
+        <summary><strong>Step 1 — Per-match win/draw/loss probabilities</strong></summary>
+        <p>FIFA's SUM ranking system updates points after matches using an Elo-style formula with divisor <code>600</code>. We invert it to get pre-match win probabilities:</p>
+        <div class="math">P(A beats B, no draw) = 1 / (1 + 10<sup>−(pts<sub>A</sub> − pts<sub>B</sub>)/600</sup>)</div>
+        <p>Worked example for <strong>Iran vs Belgium</strong>: pts<sub>IRN</sub>=1615.3, pts<sub>BEL</sub>=1734.7, gap = −119.4.<br>
+        P(Iran beats Belgium) = 1 / (1 + 10<sup>119.4/600</sup>) = 1 / (1 + 10<sup>0.199</sup>) = 1 / (1 + 1.58) = <strong>38.7%</strong>.</p>
+        <p>For group-stage matches we add a draw probability that decays with the rating gap:</p>
+        <div class="math">P(draw) ≈ 0.28 × exp(−gap² / 300²)</div>
+        <p>So evenly-matched sides draw ~28% of the time, falling toward 0 for blowouts. Iran vs Belgium has P(draw) ≈ 0.24, and the W/L probabilities scale to fill the remaining 76%.</p>
+      </details>
+      <details>
+        <summary><strong>Step 2 — Simulate every group's 6 matches, rank by FIFA tiebreakers</strong></summary>
+        <p>Each group has 4 teams and 6 round-robin matches. After all 6 are played, teams are ranked by:</p>
+        <ol>
+          <li>Total points (3-1-0)</li>
+          <li>Goal difference</li>
+          <li>Goals for</li>
+          <li>Deterministic tiebreak by FIFA rating (proxy for fair-play / drawn lots — rare edge cases only)</li>
+        </ol>
+        <p>For Group G, Iran's typical outcomes look like:</p>
+        <ul>
+          <li>Beat NZL (78.3% per match), beat EGY (55.0%), at-least-draw BEL (~57% any non-loss) → <strong>Iran wins the group</strong></li>
+          <li>Lose or draw BEL but beat both other → <strong>Iran 2nd</strong></li>
+          <li>Lose to BEL AND drop points to either EGY or NZL → <strong>Iran 3rd or 4th</strong></li>
+        </ul>
+        <p>Counting Iran's finish position across 80,000 simulations gives: <strong>1st 23.9%, 2nd 40.4%, 3rd 25.7%, 4th 10.0%</strong>.</p>
+      </details>
+      <details>
+        <summary><strong>Step 3 — Resolve Iran's R32 opponent</strong></summary>
+        <p>Per FIFA's published bracket:</p>
+        <ul>
+          <li>If Iran wins Group G → plays Match 82 vs the best-3rd-place team from Group A/E/H/I/J (specific team determined by Annex C's 495-row mapping)</li>
+          <li>If Iran 2nd → plays Match 88 vs Group D runner-up</li>
+        </ul>
+        <p>For each simulation we (a) collect all 12 third-placed teams' tiebreaker records, (b) pick the best 8 to qualify, and (c) look up which group's 3rd-place team is assigned to face Iran via the Annex C combo for those 8 qualifying groups.</p>
+      </details>
+      <details>
+        <summary><strong>Step 4 — Knockout match resolution</strong></summary>
+        <p>R32 matches are sampled as binary win/lose using the same Elo formula (no draw — extra time + penalties collapse into a single Bernoulli outcome with equal variance contribution from both sides). Iran's R32 win probability is computed per opponent.</p>
+      </details>
+      <details>
+        <summary><strong>Step 5 — Path probability decomposition</strong></summary>
+        <p>For each path (e.g. <em>Iran 1st → Czechia → R16 in Seattle</em>):</p>
+        <div class="math">P(path) = P(Iran 1st) × P(opp 3rd in their group) × P(group selected & assigned to 1G | opp 3rd) × P(Iran wins R32)</div>
+        <p>For <strong>Czechia (the most-likely 1st-place path)</strong>: 0.239 × 0.340 × 0.595 × 0.602 = <strong>2.91%</strong>.</p>
+        <p>For <strong>Türkiye (the most-likely 2nd-place path)</strong>: 0.404 × 0.302 × 1.0 × 0.520 = <strong>6.32%</strong>.</p>
+        <p>Summing across all 24 paths gives Iran's total chance of reaching the R16 via 1st or 2nd place = <strong>34.2%</strong>.</p>
+      </details>
+      <details>
+        <summary><strong>Limitations</strong></summary>
+        <ul>
+          <li>FIFA rankings are a lagging proxy for current form. Squad changes / injuries Apr→Jun aren't modeled.</li>
+          <li>Home-region advantage is partially baked into ratings but not explicitly modeled (USA could outperform; Iran on US soil with massive LA diaspora — unclear net effect).</li>
+          <li>Iran's path via 3rd place (best-of-8) is excluded by design per your request. Including it adds roughly 10–15 percentage points to Iran's total R16 probability.</li>
+          <li>The draw probability shape is heuristic. A beta-binomial fit to historical group-stage data would tighten the model but the relative path ordering would barely change.</li>
+        </ul>
+      </details>
+      <details>
+        <summary><strong>Data lineage</strong></summary>
+        <ul>
+          <li>FIFA Apr-2026 rankings — <code>data/teams_fifa_ranking_april2026.json</code> (via football-ranking.com mirror of inside.fifa.com)</li>
+          <li>Iran group schedule — <code>data/iran_group_stage_schedule.json</code> (FIFA + Yahoo Sports + Al Jazeera cross-check)</li>
+          <li>Knockout bracket + venues — <code>data/knockout_bracket_structure.json</code></li>
+          <li>Annex C 495-row table — embedded in <code>code/compute_paths.py</code></li>
+          <li>Computed paths — <code>data/iran_r16_paths.json</code></li>
+          <li>This page — built by <code>code/build_dashboard.py</code></li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <footer>
+    Built from FIFA April 2026 rankings + official 2026 World Cup schedule &middot; Monte Carlo (n=80,000) &middot; Re-run <code>python3 code/compute_paths.py &amp;&amp; python3 code/build_dashboard.py</code> to refresh
+  </footer>
+</div>
+
+<script>
+const FULL_DATA = {"n_sims":80000,"iran_group_finish":{"1st_pct":23.89875,"2nd_pct":40.42625,"3rd_pct":25.6475,"4th_pct":10.0275},"group_finish_distribution":{"A":[{"code":"MEX","name":"Mexico","rank":15,"pts":1681.03,"p_1st":0.5023125,"p_2nd":0.2559625,"p_3rd":0.154825,"p_4th":0.0869},{"code":"RSA","name":"South Africa","rank":59,"pts":1429.73,"p_1st":0.0899875,"p_2nd":0.1577,"p_3rd":0.265025,"p_4th":0.4872875},{"code":"KOR","name":"Korea Republic","rank":25,"pts":1588.67,"p_1st":0.2534125,"p_2nd":0.3449875,"p_3rd":0.2401875,"p_4th":0.1614125},{"code":"CZE","name":"Czechia","rank":38,"pts":1513.74,"p_1st":0.1542875,"p_2nd":0.24135,"p_3rd":0.3399625,"p_4th":0.2644}],"B":[{"code":"CAN","name":"Canada","rank":30,"pts":1556.48,"p_1st":0.250325,"p_2nd":0.35795,"p_3rd":0.2364375,"p_4th":0.1552875},{"code":"BIH","name":"Bosnia and Herzegovina","rank":63,"pts":1398.23,"p_1st":0.093575,"p_2nd":0.164375,"p_3rd":0.2662,"p_4th":0.47585},{"code":"QAT","name":"Qatar","rank":55,"pts":1454.96,"p_1st":0.1347875,"p_2nd":0.2291375,"p_3rd":0.3486875,"p_4th":0.2873875},{"code":"SUI","name":"Switzerland","rank":19,"pts":1649.4,"p_1st":0.5213125,"p_2nd":0.2485375,"p_3rd":0.148675,"p_4th":0.081475}],"C":[{"code":"BRA","name":"Brazil","rank":6,"pts":1761.16,"p_1st":0.550725,"p_2nd":0.283525,"p_3rd":0.13045,"p_4th":0.0353},{"code":"MAR","name":"Morocco","rank":8,"pts":1756.8,"p_1st":0.349275,"p_2nd":0.4563125,"p_3rd":0.1535875,"p_4th":0.040825},{"code":"HAI","name":"Haiti","rank":83,"pts":1291.71,"p_1st":0.0183,"p_2nd":0.0638,"p_3rd":0.19485,"p_4th":0.72305},{"code":"SCO","name":"Scotland","rank":43,"pts":1498.35,"p_1st":0.0817,"p_2nd":0.1963625,"p_3rd":0.5211125,"p_4th":0.200825}],"D":[{"code":"USA","name":"United States","rank":16,"pts":1673.13,"p_1st":0.4305375,"p_2nd":0.2635125,"p_3rd":0.1817375,"p_4th":0.1242125},{"code":"PAR","name":"Paraguay","rank":41,"pts":1503.51,"p_1st":0.121775,"p_2nd":0.180275,"p_3rd":0.2683625,"p_4th":0.4295875},{"code":"AUS","name":"Australia","rank":27,"pts":1580.68,"p_1st":0.1985625,"p_2nd":0.2543125,"p_3rd":0.3010625,"p_4th":0.2460625},{"code":"TUR","name":"Turkiye","rank":22,"pts":1599.03,"p_1st":0.249125,"p_2nd":0.3019,"p_3rd":0.2488375,"p_4th":0.2001375}],"E":[{"code":"GER","name":"Germany","rank":10,"pts":1730.37,"p_1st":0.5892,"p_2nd":0.2412125,"p_3rd":0.1267625,"p_4th":0.042825},{"code":"CUW","name":"Curacao","rank":82,"pts":1294.66,"p_1st":0.0336,"p_2nd":0.0899125,"p_3rd":0.2042375,"p_4th":0.67225},{"code":"CIV","name":"Cote d'Ivoire","rank":34,"pts":1532.97,"p_1st":0.1463625,"p_2nd":0.263475,"p_3rd":0.4164625,"p_4th":0.1737},{"code":"ECU","name":"Ecuador","rank":23,"pts":1594.79,"p_1st":0.2308375,"p_2nd":0.4054,"p_3rd":0.2525375,"p_4th":0.111225}],"F":[{"code":"NED","name":"Netherlands","rank":7,"pts":1757.87,"p_1st":0.546825,"p_2nd":0.2438,"p_3rd":0.13995,"p_4th":0.069425},{"code":"JPN","name":"Japan","rank":18,"pts":1660.43,"p_1st":0.2583875,"p_2nd":0.3842375,"p_3rd":0.2237,"p_4th":0.133675},{"code":"SWE","name":"Sweden","rank":37,"pts":1514.77,"p_1st":0.111625,"p_2nd":0.209875,"p_3rd":0.3641125,"p_4th":0.3143875},{"code":"TUN","name":"Tunisia","rank":44,"pts":1483.05,"p_1st":0.0831625,"p_2nd":0.1620875,"p_3rd":0.2722375,"p_4th":0.4825125}],"G":[{"code":"BEL","name":"Belgium","rank":9,"pts":1734.72,"p_1st":0.5696,"p_2nd":0.250875,"p_3rd":0.13595,"p_4th":0.043575},{"code":"EGY","name":"Egypt","rank":29,"pts":1563.24,"p_1st":0.163125,"p_2nd":0.268825,"p_3rd":0.421575,"p_4th":0.146475},{"code":"IRN","name":"IR Iran","rank":20,"pts":1615.3,"p_1st":0.2389875,"p_2nd":0.4042625,"p_3rd":0.256475,"p_4th":0.100275},{"code":"NZL","name":"New Zealand","rank":85,"pts":1281.57,"p_1st":0.0282875,"p_2nd":0.0760375,"p_3rd":0.186,"p_4th":0.709675}],"H":[{"code":"ESP","name":"Spain","rank":2,"pts":1876.4,"p_1st":0.7347375,"p_2nd":0.1855125,"p_3rd":0.06505,"p_4th":0.0147},{"code":"CPV","name":"Cabo Verde","rank":68,"pts":1371.13,"p_1st":0.026125,"p_2nd":0.114025,"p_3rd":0.2615375,"p_4th":0.5983125},{"code":"KSA","name":"Saudi Arabia","rank":61,"pts":1421.43,"p_1st":0.0423125,"p_2nd":0.1648125,"p_3rd":0.4844125,"p_4th":0.3084625},{"code":"URU","name":"Uruguay","rank":17,"pts":1673.07,"p_1st":0.196825,"p_2nd":0.53565,"p_3rd":0.189,"p_4th":0.078525}],"I":[{"code":"FRA","name":"France","rank":1,"pts":1877.32,"p_1st":0.6762375,"p_2nd":0.19915,"p_3rd":0.0943,"p_4th":0.0303125},{"code":"SEN","name":"Senegal","rank":13,"pts":1691.97,"p_1st":0.2004875,"p_2nd":0.457375,"p_3rd":0.2274125,"p_4th":0.114725},{"code":"IRQ","name":"Iraq","rank":57,"pts":1447.13,"p_1st":0.0402625,"p_2nd":0.124825,"p_3rd":0.2457625,"p_4th":0.58915},{"code":"NOR","name":"Norway","rank":31,"pts":1550.95,"p_1st":0.0830125,"p_2nd":0.21865,"p_3rd":0.432525,"p_4th":0.2658125}],"J":[{"code":"ARG","name":"Argentina","rank":3,"pts":1874.82,"p_1st":0.72335,"p_2nd":0.174825,"p_3rd":0.077825,"p_4th":0.024},{"code":"ALG","name":"Algeria","rank":28,"pts":1564.26,"p_1st":0.102225,"p_2nd":0.2781375,"p_3rd":0.4098625,"p_4th":0.209775},{"code":"AUT","name":"Austria","rank":24,"pts":1593.45,"p_1st":0.1417,"p_2nd":0.4251875,"p_3rd":0.2741125,"p_4th":0.159},{"code":"JOR","name":"Jordan","rank":64,"pts":1391.45,"p_1st":0.032725,"p_2nd":0.12185,"p_3rd":0.2382,"p_4th":0.607225}],"K":[{"code":"POR","name":"Portugal","rank":5,"pts":1763.83,"p_1st":0.55645,"p_2nd":0.2513875,"p_3rd":0.13285,"p_4th":0.0593125},{"code":"COD","name":"DR Congo","rank":46,"pts":1479.64,"p_1st":0.0859125,"p_2nd":0.1852625,"p_3rd":0.3898625,"p_4th":0.3389625},{"code":"UZB","name":"Uzbekistan","rank":49,"pts":1469.4,"p_1st":0.0718,"p_2nd":0.15275,"p_3rd":0.2782875,"p_4th":0.4971625},{"code":"COL","name":"Colombia","rank":12,"pts":1693.09,"p_1st":0.2858375,"p_2nd":0.4106,"p_3rd":0.199,"p_4th":0.1045625}],"L":[{"code":"ENG","name":"England","rank":4,"pts":1825.97,"p_1st":0.622075,"p_2nd":0.2373125,"p_3rd":0.110775,"p_4th":0.0298375},{"code":"CRO","name":"Croatia","rank":11,"pts":1717.06,"p_1st":0.2608125,"p_2nd":0.4693375,"p_3rd":0.1974875,"p_4th":0.0723625},{"code":"GHA","name":"Ghana","rank":73,"pts":1346.31,"p_1st":0.024725,"p_2nd":0.0802375,"p_3rd":0.2012125,"p_4th":0.693825},{"code":"PAN","name":"Panama","rank":33,"pts":1540.64,"p_1st":0.0923875,"p_2nd":0.2131125,"p_3rd":0.490525,"p_4th":0.203975}]},"paths":[{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Curacao","r32_opponent_code":"CUW","opp_fifa_rank":82,"opp_fifa_pts":1294.66,"opp_group":"E","opp_qualification_route":"3rd place of Group E","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.0014645117422459333,"p_iran_wins_r32_vs_this_opp":0.8571428571428571,"p_path_to_r16":0.0002999999999999999,"p_opp_qualifies_in_group_role":0.2042375,"p_group_route_selected":0.007170630967603567,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Curacao finishes 3rd in Group E","prob":0.2042375,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group E's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.007170630967603567,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Curacao in R32","prob":0.8571428571428571,"explain":"FIFA-Elo model: Iran 1615 vs Curacao 1295 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Germany","r32_opponent_code":"GER","opp_fifa_rank":10,"opp_fifa_pts":1730.37,"opp_group":"E","opp_qualification_route":"3rd place of Group E","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.0028244155029028715,"p_iran_wins_r32_vs_this_opp":0.46296296296296297,"p_path_to_r16":0.0003125,"p_opp_qualifies_in_group_role":0.1267625,"p_group_route_selected":0.02228115967184989,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Germany finishes 3rd in Group E","prob":0.1267625,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group E's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.02228115967184989,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Germany in R32","prob":0.46296296296296297,"explain":"FIFA-Elo model: Iran 1615 vs Germany 1730 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Ecuador","r32_opponent_code":"ECU","opp_fifa_rank":23,"opp_fifa_pts":1594.79,"opp_group":"E","opp_qualification_route":"3rd place of Group E","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.004655055180710288,"p_iran_wins_r32_vs_this_opp":0.449438202247191,"p_path_to_r16":0.0004999999999999999,"p_opp_qualifies_in_group_role":0.2525375,"p_group_route_selected":0.01843312450907405,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Ecuador finishes 3rd in Group E","prob":0.2525375,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group E's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.01843312450907405,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Ecuador in R32","prob":0.449438202247191,"explain":"FIFA-Elo model: Iran 1615 vs Ecuador 1595 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"France","r32_opponent_code":"FRA","opp_fifa_rank":1,"opp_fifa_pts":1877.32,"opp_group":"I","opp_qualification_route":"3rd place of Group I","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.010722318112872012,"p_iran_wins_r32_vs_this_opp":0.25853658536585367,"p_path_to_r16":0.0006624999999999999,"p_opp_qualifies_in_group_role":0.0943,"p_group_route_selected":0.11370432781412526,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"France finishes 3rd in Group I","prob":0.0943,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group I's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.11370432781412526,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats France in R32","prob":0.25853658536585367,"explain":"FIFA-Elo model: Iran 1615 vs France 1877 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Argentina","r32_opponent_code":"ARG","opp_fifa_rank":3,"opp_fifa_pts":1874.82,"opp_group":"J","opp_qualification_route":"3rd place of Group J","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.01365134159736388,"p_iran_wins_r32_vs_this_opp":0.2988505747126437,"p_path_to_r16":0.0009750000000000002,"p_opp_qualifies_in_group_role":0.077825,"p_group_route_selected":0.17541074972520243,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Argentina finishes 3rd in Group J","prob":0.077825,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group J's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.17541074972520243,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Argentina in R32","prob":0.2988505747126437,"explain":"FIFA-Elo model: Iran 1615 vs Argentina 1875 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Cote d'Ivoire","r32_opponent_code":"CIV","opp_fifa_rank":34,"opp_fifa_pts":1532.97,"opp_group":"E","opp_qualification_route":"3rd place of Group E","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.0072179507296406716,"p_iran_wins_r32_vs_this_opp":0.5869565217391305,"p_path_to_r16":0.0010125000000000002,"p_opp_qualifies_in_group_role":0.4164625,"p_group_route_selected":0.01733157422250664,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Cote d'Ivoire finishes 3rd in Group E","prob":0.4164625,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group E's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.01733157422250664,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Cote d'Ivoire in R32","prob":0.5869565217391305,"explain":"FIFA-Elo model: Iran 1615 vs Cote d'Ivoire 1533 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Spain","r32_opponent_code":"ESP","opp_fifa_rank":2,"opp_fifa_pts":1876.4,"opp_group":"H","opp_qualification_route":"3rd place of Group H","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.01804487682410168,"p_iran_wins_r32_vs_this_opp":0.2579710144927536,"p_path_to_r16":0.0011125,"p_opp_qualifies_in_group_role":0.06505,"p_group_route_selected":0.27740010490548317,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Spain finishes 3rd in Group H","prob":0.06505,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group H's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.27740010490548317,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Spain in R32","prob":0.2579710144927536,"explain":"FIFA-Elo model: Iran 1615 vs Spain 1876 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Senegal","r32_opponent_code":"SEN","opp_fifa_rank":13,"opp_fifa_pts":1691.97,"opp_group":"I","opp_qualification_route":"3rd place of Group I","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.022909147967989957,"p_iran_wins_r32_vs_this_opp":0.410958904109589,"p_path_to_r16":0.00225,"p_opp_qualifies_in_group_role":0.2274125,"p_group_route_selected":0.10073829700649682,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Senegal finishes 3rd in Group I","prob":0.2274125,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group I's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.10073829700649682,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Senegal in R32","prob":0.410958904109589,"explain":"FIFA-Elo model: Iran 1615 vs Senegal 1692 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Iraq","r32_opponent_code":"IRQ","opp_fifa_rank":57,"opp_fifa_pts":1447.13,"opp_group":"I","opp_qualification_route":"3rd place of Group I","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.015900413201527276,"p_iran_wins_r32_vs_this_opp":0.6578947368421053,"p_path_to_r16":0.0025,"p_opp_qualifies_in_group_role":0.2457625,"p_group_route_selected":0.06469828880129098,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Iraq finishes 3rd in Group I","prob":0.2457625,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group I's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.06469828880129098,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Iraq in R32","prob":0.6578947368421053,"explain":"FIFA-Elo model: Iran 1615 vs Iraq 1447 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Jordan","r32_opponent_code":"JOR","opp_fifa_rank":64,"opp_fifa_pts":1391.45,"opp_group":"J","opp_qualification_route":"3rd place of Group J","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.020816988336210054,"p_iran_wins_r32_vs_this_opp":0.7035175879396985,"p_path_to_r16":0.0035000000000000005,"p_opp_qualifies_in_group_role":0.2382,"p_group_route_selected":0.087392898136902,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Jordan finishes 3rd in Group J","prob":0.2382,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group J's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.087392898136902,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Jordan in R32","prob":0.7035175879396985,"explain":"FIFA-Elo model: Iran 1615 vs Jordan 1391 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Cabo Verde","r32_opponent_code":"CPV","opp_fifa_rank":68,"opp_fifa_pts":1371.13,"opp_group":"H","opp_qualification_route":"3rd place of Group H","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.027668811130289243,"p_iran_wins_r32_vs_this_opp":0.6710775047258979,"p_path_to_r16":0.0044375,"p_opp_qualifies_in_group_role":0.2615375,"p_group_route_selected":0.10579290208971656,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Cabo Verde finishes 3rd in Group H","prob":0.2615375,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group H's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.10579290208971656,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Cabo Verde in R32","prob":0.6710775047258979,"explain":"FIFA-Elo model: Iran 1615 vs Cabo Verde 1371 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Austria","r32_opponent_code":"AUT","opp_fifa_rank":24,"opp_fifa_pts":1593.45,"opp_group":"J","opp_qualification_route":"3rd place of Group J","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.035409801767874886,"p_iran_wins_r32_vs_this_opp":0.5450516986706057,"p_path_to_r16":0.0046125,"p_opp_qualifies_in_group_role":0.2741125,"p_group_route_selected":0.1291798140102144,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Austria finishes 3rd in Group J","prob":0.2741125,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group J's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.1291798140102144,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Austria in R32","prob":0.5450516986706057,"explain":"FIFA-Elo model: Iran 1615 vs Austria 1593 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Norway","r32_opponent_code":"NOR","opp_fifa_rank":31,"opp_fifa_pts":1550.95,"opp_group":"I","opp_qualification_route":"3rd place of Group I","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.035305193786285896,"p_iran_wins_r32_vs_this_opp":0.562962962962963,"p_path_to_r16":0.004750000000000001,"p_opp_qualifies_in_group_role":0.432525,"p_group_route_selected":0.08162578761062574,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Norway finishes 3rd in Group I","prob":0.432525,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group I's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.08162578761062574,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Norway in R32","prob":0.562962962962963,"explain":"FIFA-Elo model: Iran 1615 vs Norway 1551 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Uruguay","r32_opponent_code":"URU","opp_fifa_rank":17,"opp_fifa_pts":1673.07,"opp_group":"H","opp_qualification_route":"3rd place of Group H","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.04336000836863853,"p_iran_wins_r32_vs_this_opp":0.47165259348612787,"p_path_to_r16":0.0048875,"p_opp_qualifies_in_group_role":0.189,"p_group_route_selected":0.22941803369650016,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Uruguay finishes 3rd in Group H","prob":0.189,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group H's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.22941803369650016,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Uruguay in R32","prob":0.47165259348612787,"explain":"FIFA-Elo model: Iran 1615 vs Uruguay 1673 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Saudi Arabia","r32_opponent_code":"KSA","opp_fifa_rank":61,"opp_fifa_pts":1421.43,"opp_group":"H","opp_qualification_route":"3rd place of Group H","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.04278466446989905,"p_iran_wins_r32_vs_this_opp":0.687041564792176,"p_path_to_r16":0.007025,"p_opp_qualifies_in_group_role":0.4844125,"p_group_route_selected":0.08832279197976735,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Saudi Arabia finishes 3rd in Group H","prob":0.4844125,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group H's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.08832279197976735,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Saudi Arabia in R32","prob":0.687041564792176,"explain":"FIFA-Elo model: Iran 1615 vs Saudi Arabia 1421 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Algeria","r32_opponent_code":"ALG","opp_fifa_rank":28,"opp_fifa_pts":1564.26,"opp_group":"J","opp_qualification_route":"3rd place of Group J","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.054343846435483026,"p_iran_wins_r32_vs_this_opp":0.5495668912415784,"p_path_to_r16":0.007137499999999999,"p_opp_qualifies_in_group_role":0.4098625,"p_group_route_selected":0.1325904332196359,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Algeria finishes 3rd in Group J","prob":0.4098625,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group J's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.1325904332196359,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Algeria in R32","prob":0.5495668912415784,"explain":"FIFA-Elo model: Iran 1615 vs Algeria 1564 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Mexico","r32_opponent_code":"MEX","opp_fifa_rank":15,"opp_fifa_pts":1681.03,"opp_group":"A","opp_qualification_route":"3rd place of Group A","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.11611485956378471,"p_iran_wins_r32_vs_this_opp":0.4198198198198198,"p_path_to_r16":0.011649999999999999,"p_opp_qualifies_in_group_role":0.154825,"p_group_route_selected":0.7499748720412384,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Mexico finishes 3rd in Group A","prob":0.154825,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group A's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.7499748720412384,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Mexico in R32","prob":0.4198198198198198,"explain":"FIFA-Elo model: Iran 1615 vs Mexico 1681 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Korea Republic","r32_opponent_code":"KOR","opp_fifa_rank":25,"opp_fifa_pts":1588.67,"opp_group":"A","opp_qualification_route":"3rd place of Group A","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.1645483550394895,"p_iran_wins_r32_vs_this_opp":0.5311506675143038,"p_path_to_r16":0.020887499999999996,"p_opp_qualifies_in_group_role":0.2401875,"p_group_route_selected":0.6850829249627458,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Korea Republic finishes 3rd in Group A","prob":0.2401875,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group A's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.6850829249627458,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Korea Republic in R32","prob":0.5311506675143038,"explain":"FIFA-Elo model: Iran 1615 vs Korea Republic 1589 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"South Africa","r32_opponent_code":"RSA","opp_fifa_rank":59,"opp_fifa_pts":1429.73,"opp_group":"A","opp_qualification_route":"3rd place of Group A","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.1599456038495737,"p_iran_wins_r32_vs_this_opp":0.6805101373446697,"p_path_to_r16":0.026012499999999997,"p_opp_qualifies_in_group_role":0.265025,"p_group_route_selected":0.6035113813775067,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"South Africa finishes 3rd in Group A","prob":0.265025,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group A's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.6035113813775067,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats South Africa in R32","prob":0.6805101373446697,"explain":"FIFA-Elo model: Iran 1615 vs South Africa 1430 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"1st (Group G winner)","r32_match":"M82 \u2014 Lumen Field, Seattle, July 1 (16:00 ET)","r32_opponent":"Czechia","r32_opponent_code":"CZE","opp_fifa_rank":38,"opp_fifa_pts":1513.74,"opp_group":"A","opp_qualification_route":"3rd place of Group A","r16_match_if_advance":"M94 \u2014 Lumen Field, Seattle, July 6 (20:00 ET)","r16_opponent_source":"Winner of M81 (Group D winner vs best 3rd from B/E/F/I/J)","p_iran_finishes_this_position":0.2389875,"p_this_opponent_given_finish":0.20231183639311678,"p_iran_wins_r32_vs_this_opp":0.6016028955532575,"p_path_to_r16":0.0290875,"p_opp_qualifies_in_group_role":0.3399625,"p_group_route_selected":0.5951004489998655,"qualification_chain":[{"step":"Iran finishes 1st in Group G","prob":0.2389875,"explain":"Iran (1615 pts) needs to win Group G ahead of Belgium, Egypt, NZ."},{"step":"Czechia finishes 3rd in Group A","prob":0.3399625,"explain":"They must lose the top-2 spots in their group to two other teams."},{"step":"Group A's 3rd-place team qualifies in best-8 AND is assigned to face 1G","prob":0.5951004489998655,"explain":"Among 12 groups' 3rd-placed teams, only 8 advance. Annex C of FIFA's regs then maps each combo to which group winners face which 3rd-place team."},{"step":"Iran beats Czechia in R32","prob":0.6016028955532575,"explain":"FIFA-Elo model: Iran 1615 vs Czechia 1514 \u2192 no-draw binary outcome."}]},{"iran_group_finish":"2nd (Group G runner-up)","r32_match":"M88 \u2014 AT&T Stadium, Arlington/Dallas, July 3 (14:00 ET)","r32_opponent":"Paraguay","r32_opponent_code":"PAR","opp_fifa_rank":41,"opp_fifa_pts":1503.51,"opp_group":"D","opp_qualification_route":"Runner-up of Group D","r16_match_if_advance":"M95 \u2014 Mercedes-Benz Stadium, Atlanta, July 7 (12:00 ET)","r16_opponent_source":"Winner of M86 (Group J winner vs Group H runner-up)","p_iran_finishes_this_position":0.4042625,"p_this_opponent_given_finish":0.1793389196376117,"p_iran_wins_r32_vs_this_opp":0.6093103448275862,"p_path_to_r16":0.044175000000000006,"p_opp_qualifies_in_group_role":0.180275,"p_group_route_selected":1.0,"qualification_chain":[{"step":"Iran finishes 2nd in Group G","prob":0.4042625,"explain":"Iran (1615 pts) finishes behind Belgium (most likely) but ahead of Egypt and NZ."},{"step":"Paraguay finishes 2nd in Group D","prob":0.180275,"explain":"They compete with USA, Paraguay, Australia, T\u00fcrkiye for the runner-up spot."},{"step":"(Group D runner-up always plays Group G runner-up \u2014 no Annex C needed)","prob":1.0,"explain":"Pre-set bracket: M88 = Runner-up D vs Runner-up G."},{"step":"Iran beats Paraguay in R32","prob":0.6093103448275862,"explain":"FIFA-Elo model: Iran 1615 vs Paraguay 1504."}]},{"iran_group_finish":"2nd (Group G runner-up)","r32_match":"M88 \u2014 AT&T Stadium, Arlington/Dallas, July 3 (14:00 ET)","r32_opponent":"United States","r32_opponent_code":"USA","opp_fifa_rank":16,"opp_fifa_pts":1673.13,"opp_group":"D","opp_qualification_route":"Runner-up of Group D","r16_match_if_advance":"M95 \u2014 Mercedes-Benz Stadium, Atlanta, July 7 (12:00 ET)","r16_opponent_source":"Winner of M86 (Group J winner vs Group H runner-up)","p_iran_finishes_this_position":0.4042625,"p_this_opponent_given_finish":0.26532883955350794,"p_iran_wins_r32_vs_this_opp":0.4415569280969584,"p_path_to_r16":0.0473625,"p_opp_qualifies_in_group_role":0.2635125,"p_group_route_selected":1.0,"qualification_chain":[{"step":"Iran finishes 2nd in Group G","prob":0.4042625,"explain":"Iran (1615 pts) finishes behind Belgium (most likely) but ahead of Egypt and NZ."},{"step":"United States finishes 2nd in Group D","prob":0.2635125,"explain":"They compete with USA, Paraguay, Australia, T\u00fcrkiye for the runner-up spot."},{"step":"(Group D runner-up always plays Group G runner-up \u2014 no Annex C needed)","prob":1.0,"explain":"Pre-set bracket: M88 = Runner-up D vs Runner-up G."},{"step":"Iran beats United States in R32","prob":0.4415569280969584,"explain":"FIFA-Elo model: Iran 1615 vs United States 1673."}]},{"iran_group_finish":"2nd (Group G runner-up)","r32_match":"M88 \u2014 AT&T Stadium, Arlington/Dallas, July 3 (14:00 ET)","r32_opponent":"Australia","r32_opponent_code":"AUS","opp_fifa_rank":27,"opp_fifa_pts":1580.68,"opp_group":"D","opp_qualification_route":"Runner-up of Group D","r16_match_if_advance":"M95 \u2014 Mercedes-Benz Stadium, Atlanta, July 7 (12:00 ET)","r16_opponent_source":"Winner of M86 (Group J winner vs Group H runner-up)","p_iran_finishes_this_position":0.4042625,"p_this_opponent_given_finish":0.25509415293280974,"p_iran_wins_r32_vs_this_opp":0.5242424242424243,"p_path_to_r16":0.054062500000000006,"p_opp_qualifies_in_group_role":0.2543125,"p_group_route_selected":1.0,"qualification_chain":[{"step":"Iran finishes 2nd in Group G","prob":0.4042625,"explain":"Iran (1615 pts) finishes behind Belgium (most likely) but ahead of Egypt and NZ."},{"step":"Australia finishes 2nd in Group D","prob":0.2543125,"explain":"They compete with USA, Paraguay, Australia, T\u00fcrkiye for the runner-up spot."},{"step":"(Group D runner-up always plays Group G runner-up \u2014 no Annex C needed)","prob":1.0,"explain":"Pre-set bracket: M88 = Runner-up D vs Runner-up G."},{"step":"Iran beats Australia in R32","prob":0.5242424242424243,"explain":"FIFA-Elo model: Iran 1615 vs Australia 1581."}]},{"iran_group_finish":"2nd (Group G runner-up)","r32_match":"M88 \u2014 AT&T Stadium, Arlington/Dallas, July 3 (14:00 ET)","r32_opponent":"Turkiye","r32_opponent_code":"TUR","opp_fifa_rank":22,"opp_fifa_pts":1599.03,"opp_group":"D","opp_qualification_route":"Runner-up of Group D","r16_match_if_advance":"M95 \u2014 Mercedes-Benz Stadium, Atlanta, July 7 (12:00 ET)","r16_opponent_source":"Winner of M86 (Group J winner vs Group H runner-up)","p_iran_finishes_this_position":0.4042625,"p_this_opponent_given_finish":0.30023808787607065,"p_iran_wins_r32_vs_this_opp":0.5202883625128734,"p_path_to_r16":0.06315000000000001,"p_opp_qualifies_in_group_role":0.3019,"p_group_route_selected":1.0,"qualification_chain":[{"step":"Iran finishes 2nd in Group G","prob":0.4042625,"explain":"Iran (1615 pts) finishes behind Belgium (most likely) but ahead of Egypt and NZ."},{"step":"Turkiye finishes 2nd in Group D","prob":0.3019,"explain":"They compete with USA, Paraguay, Australia, T\u00fcrkiye for the runner-up spot."},{"step":"(Group D runner-up always plays Group G runner-up \u2014 no Annex C needed)","prob":1.0,"explain":"Pre-set bracket: M88 = Runner-up D vs Runner-up G."},{"step":"Iran beats Turkiye in R32","prob":0.5202883625128734,"explain":"FIFA-Elo model: Iran 1615 vs Turkiye 1599."}]}],"headline":{"total_p_iran_reaches_r16":0.3423625,"via_winning_group":0.13361249999999997,"via_runner_up":0.20875000000000002}};
+
+const TEAMS = {"MEX":{"name":"Mexico","rank":15,"pts":1681.03,"group":"A"},"RSA":{"name":"South Africa","rank":59,"pts":1429.73,"group":"A"},"KOR":{"name":"Korea Republic","rank":25,"pts":1588.67,"group":"A"},"CZE":{"name":"Czechia","rank":38,"pts":1513.74,"group":"A"},"CAN":{"name":"Canada","rank":30,"pts":1556.48,"group":"B"},"BIH":{"name":"Bosnia and Herzegovina","rank":63,"pts":1398.23,"group":"B"},"QAT":{"name":"Qatar","rank":55,"pts":1454.96,"group":"B"},"SUI":{"name":"Switzerland","rank":19,"pts":1649.4,"group":"B"},"BRA":{"name":"Brazil","rank":6,"pts":1761.16,"group":"C"},"MAR":{"name":"Morocco","rank":8,"pts":1756.8,"group":"C"},"HAI":{"name":"Haiti","rank":83,"pts":1291.71,"group":"C"},"SCO":{"name":"Scotland","rank":43,"pts":1498.35,"group":"C"},"USA":{"name":"United States","rank":16,"pts":1673.13,"group":"D"},"PAR":{"name":"Paraguay","rank":41,"pts":1503.51,"group":"D"},"AUS":{"name":"Australia","rank":27,"pts":1580.68,"group":"D"},"TUR":{"name":"Turkiye","rank":22,"pts":1599.03,"group":"D"},"GER":{"name":"Germany","rank":10,"pts":1730.37,"group":"E"},"CUW":{"name":"Curacao","rank":82,"pts":1294.66,"group":"E"},"CIV":{"name":"Cote d'Ivoire","rank":34,"pts":1532.97,"group":"E"},"ECU":{"name":"Ecuador","rank":23,"pts":1594.79,"group":"E"},"NED":{"name":"Netherlands","rank":7,"pts":1757.87,"group":"F"},"JPN":{"name":"Japan","rank":18,"pts":1660.43,"group":"F"},"SWE":{"name":"Sweden","rank":37,"pts":1514.77,"group":"F"},"TUN":{"name":"Tunisia","rank":44,"pts":1483.05,"group":"F"},"BEL":{"name":"Belgium","rank":9,"pts":1734.72,"group":"G"},"EGY":{"name":"Egypt","rank":29,"pts":1563.24,"group":"G"},"IRN":{"name":"IR Iran","rank":20,"pts":1615.3,"group":"G"},"NZL":{"name":"New Zealand","rank":85,"pts":1281.57,"group":"G"},"ESP":{"name":"Spain","rank":2,"pts":1876.4,"group":"H"},"CPV":{"name":"Cabo Verde","rank":68,"pts":1371.13,"group":"H"},"KSA":{"name":"Saudi Arabia","rank":61,"pts":1421.43,"group":"H"},"URU":{"name":"Uruguay","rank":17,"pts":1673.07,"group":"H"},"FRA":{"name":"France","rank":1,"pts":1877.32,"group":"I"},"SEN":{"name":"Senegal","rank":13,"pts":1691.97,"group":"I"},"IRQ":{"name":"Iraq","rank":57,"pts":1447.13,"group":"I"},"NOR":{"name":"Norway","rank":31,"pts":1550.95,"group":"I"},"ARG":{"name":"Argentina","rank":3,"pts":1874.82,"group":"J"},"ALG":{"name":"Algeria","rank":28,"pts":1564.26,"group":"J"},"AUT":{"name":"Austria","rank":24,"pts":1593.45,"group":"J"},"JOR":{"name":"Jordan","rank":64,"pts":1391.45,"group":"J"},"POR":{"name":"Portugal","rank":5,"pts":1763.83,"group":"K"},"COD":{"name":"DR Congo","rank":46,"pts":1479.64,"group":"K"},"UZB":{"name":"Uzbekistan","rank":49,"pts":1469.4,"group":"K"},"COL":{"name":"Colombia","rank":12,"pts":1693.09,"group":"K"},"ENG":{"name":"England","rank":4,"pts":1825.97,"group":"L"},"CRO":{"name":"Croatia","rank":11,"pts":1717.06,"group":"L"},"GHA":{"name":"Ghana","rank":73,"pts":1346.31,"group":"L"},"PAN":{"name":"Panama","rank":33,"pts":1540.64,"group":"L"}};
+
+
+// --------------------------------------------------------------
+// Page boot
+// --------------------------------------------------------------
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const fmt1 = p => (p*100).toFixed(1) + "%";
+const fmt2 = p => (p*100).toFixed(2) + "%";
+
+// Static group G info (small enough to keep inline)
+const groupG = ["BEL","EGY","IRN","NZL"].map(c => Object.assign({code:c, conf:({BEL:"UEFA",EGY:"CAF",IRN:"AFC",NZL:"OFC"})[c]}, TEAMS[c]));
+const iranMatches = [
+  { date:"Mon Jun 15, 2026", localTime:"6:00 PM PT", easternTime:"9:00 PM ET",
+    home:"IRN", away:"NZL", venue:"SoFi Stadium (LA Stadium)", city:"Inglewood, CA",
+    note:"Tournament opener for Iran" },
+  { date:"Sun Jun 21, 2026", localTime:"12:00 PM PT", easternTime:"3:00 PM ET",
+    home:"BEL", away:"IRN", venue:"SoFi Stadium (LA Stadium)", city:"Inglewood, CA",
+    note:"Decisive match for top spot" },
+  { date:"Fri Jun 26, 2026", localTime:"8:00 PM PT", easternTime:"11:00 PM ET",
+    home:"EGY", away:"IRN", venue:"Lumen Field (Seattle Stadium)", city:"Seattle, WA",
+    note:"Seattle Pride Match (designation contested by Iran + Egypt FA)" }
+];
+const otherG = [
+  { date:"Mon Jun 15", time:"3:00 PM ET", match:"BEL vs EGY", venue:"Lumen Field, Seattle" },
+  { date:"Sun Jun 21", time:"9:00 PM ET", match:"NZL vs EGY", venue:"BC Place, Vancouver" },
+  { date:"Fri Jun 26", time:"11:00 PM ET", match:"NZL vs BEL", venue:"BC Place, Vancouver" }
+];
+
+// --------------------------------------------------------------
+// Hero stats
+// --------------------------------------------------------------
+const headline = FULL_DATA.headline;
+$("#stat-total").textContent = (headline.total_p_iran_reaches_r16*100).toFixed(1) + "%";
+$("#stat-via-1st").textContent = (headline.via_winning_group*100).toFixed(1) + "%";
+$("#stat-via-2nd").textContent = (headline.via_runner_up*100).toFixed(1) + "%";
+const topPath = FULL_DATA.paths.reduce((a,b)=> b.p_path_to_r16 > a.p_path_to_r16 ? b : a);
+$("#stat-top-opp").textContent = topPath.r32_opponent;
+$("#stat-top-detail").textContent = `${topPath.iran_group_finish.split(" ")[0]} place → ${topPath.r32_opponent} (${fmt2(topPath.p_path_to_r16)})`;
+$("#ticket-1st-prob").textContent = (headline.via_winning_group*100).toFixed(1) + "%";
+$("#ticket-2nd-prob").textContent = (headline.via_runner_up*100).toFixed(1) + "%";
+
+// --------------------------------------------------------------
+// Schedule
+// --------------------------------------------------------------
+const iranBox = $("#iran-matches");
+iranMatches.forEach(m => {
+  iranBox.innerHTML += `
+    <div class="match-card">
+      <div class="match-row">
+        <span class="team-code ${m.home==='IRN'?'iran':''}">${m.home}</span>
+        <span class="vs">vs</span>
+        <span class="team-code ${m.away==='IRN'?'iran':''}">${m.away}</span>
+      </div>
+      <div class="venue-line"><span class="pill iran">${m.date}</span></div>
+      <div class="venue-line">${m.localTime} <span style="color:var(--muted)">·</span> ${m.easternTime} <span style="color:var(--muted)">(yours)</span></div>
+      <div class="venue-line">📍 ${m.venue}, ${m.city}</div>
+      ${m.note ? `<div class="venue-line" style="color:var(--muted); font-style:italic;">${m.note}</div>`: ''}
+    </div>`;
+});
+const otherBox = $("#other-matches");
+otherG.forEach(m => {
+  otherBox.innerHTML += `
+    <div class="match-card">
+      <div class="match-row"><div style="font-weight:600;">${m.match}</div></div>
+      <div class="venue-line"><span class="pill">${m.date}</span> ${m.time}</div>
+      <div class="venue-line">📍 ${m.venue}</div>
+    </div>`;
+});
+
+// --------------------------------------------------------------
+// Group G table + finish chart
+// --------------------------------------------------------------
+const iranPts = TEAMS.IRN.pts;
+const gBody = $("#group-table tbody");
+groupG.slice().sort((a,b)=> a.rank - b.rank).forEach(t => {
+  const isIran = t.code === "IRN";
+  let winP = "—", tier = "";
+  if (!isIran) {
+    const p = 1 / (1 + Math.pow(10, -(iranPts - t.pts)/600));
+    winP = (p*100).toFixed(1) + "%";
+    if (p > 0.6) tier = '<span class="badge tier-1">Iran favored</span>';
+    else if (p > 0.4) tier = '<span class="badge tier-2">Toss-up</span>';
+    else tier = '<span class="badge tier-3">Iran underdog</span>';
+  }
+  gBody.innerHTML += `
+    <tr ${isIran ? 'style="background:rgba(35,159,64,.06);"' : ''}>
+      <td><strong>${t.name}</strong> ${isIran ? '<span class="pill iran" style="margin-left:6px;">🇮🇷 you</span>': ''}</td>
+      <td class="num">#${t.rank}</td>
+      <td class="num">${t.pts.toFixed(1)}</td>
+      <td>${t.conf}</td>
+      <td>${isIran ? '<span class="pill iran">—</span>' : tier}</td>
+      <td class="num">${winP}</td>
+    </tr>`;
+});
+
+const iranFinish = FULL_DATA.iran_group_finish;
+new Chart($("#finish-chart"), {
+  type:"bar",
+  data:{ labels:["1st (advances)","2nd (advances)","3rd (best-of-8 only)","4th (out)"],
+         datasets:[{ data:[iranFinish["1st_pct"], iranFinish["2nd_pct"], iranFinish["3rd_pct"], iranFinish["4th_pct"]],
+                     backgroundColor:["#239F40","#4ade80","#facc15","#f87171"], borderRadius:6 }] },
+  options:{ plugins:{ legend:{display:false},
+                      tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(2)}%`}} },
+            scales:{ y:{beginAtZero:true, ticks:{color:"#8a8f9c", callback:v=>v+"%"}, grid:{color:"#262a33"}},
+                     x:{ticks:{color:"#e7e9ee"}, grid:{display:false}} },
+            maintainAspectRatio:false }
+});
+
+// --------------------------------------------------------------
+// Paths — expandable rows with qualification chain + group mini chart
+// --------------------------------------------------------------
+function tier(pct) { return pct > 4 ? "high" : pct > 1 ? "mid" : "low"; }
+
+function chainStepRow(step, isLast) {
+  const op = isLast ? "" : "×";
+  const pct = step.prob * 100;
+  return `
+    <div class="chain-step">
+      <div class="op">${op}</div>
+      <div class="label">${step.step}<div class="why">${step.explain}</div></div>
+      <div class="pct">${pct.toFixed(2)}%</div>
+      <div class="chain-bar"><div style="width:${Math.max(2, Math.min(100, pct))}%;"></div></div>
+    </div>`;
+}
+
+function groupMiniViz(path) {
+  // For Iran-1st paths: show source group, highlight 3rd-place
+  // For Iran-2nd paths: show Group D, highlight 2nd-place
+  const isFirst = path.iran_group_finish.startsWith("1st");
+  const sourceGroup = path.opp_group; // for Iran 1st: A/E/H/I/J; for Iran 2nd: D
+  const requiredPos = isFirst ? "p_3rd" : "p_2nd";
+  const requiredPosLabel = isFirst ? "3rd" : "2nd";
+  const teams = FULL_DATA.group_finish_distribution[sourceGroup].slice()
+                  .sort((a,b)=> TEAMS[a.code].rank - TEAMS[b.code].rank);
+  const rows = teams.map(t => {
+    const isOpp = t.code === path.r32_opponent_code;
+    const p1 = t.p_1st*100, p2 = t.p_2nd*100, p3 = t.p_3rd*100, p4 = t.p_4th*100;
+    const seg = (cls, v, role) => v < 2 ? "" : `<div class="${cls}${role?' role':''}" style="flex:${v};">${v>=8?v.toFixed(0)+'%':''}</div>`;
+    return `
+      <div class="gm-row">
+        <div class="gm-name ${isOpp?'opp':''}">${t.name}${isOpp?' ← needs '+requiredPosLabel:''}<span class="gm-rank">#${t.rank}</span></div>
+        <div class="gm-stack">
+          ${seg('p1', p1, isOpp && requiredPos==='p_1st')}
+          ${seg('p2', p2, isOpp && requiredPos==='p_2nd')}
+          ${seg('p3', p3, isOpp && requiredPos==='p_3rd')}
+          ${seg('p4', p4, isOpp && requiredPos==='p_4th')}
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="group-mini">
+      <h4>Group ${sourceGroup} simulated finish probabilities &middot; <span class="role">opponent needs ${requiredPosLabel} place</span></h4>
+      ${rows}
+      <div class="gm-legend">
+        <span><span class="sw" style="background:#239F40"></span>1st</span>
+        <span><span class="sw" style="background:#4ade80"></span>2nd</span>
+        <span><span class="sw" style="background:#facc15"></span>3rd</span>
+        <span><span class="sw" style="background:#7f1d1d"></span>4th</span>
+        <span style="margin-left:auto;">White outline = the slot the opponent needs to fill</span>
+      </div>
+    </div>`;
+}
+
+function pathCard(p, rank) {
+  const pct = p.p_path_to_r16 * 100;
+  const chain = p.qualification_chain;
+  const chainHTML = chain.map((s, i)=> chainStepRow(s, false)).join("");
+  return `
+    <div class="path-card" data-finish="${p.iran_group_finish.startsWith('1st') ? '1st' : '2nd'}" data-opp="${p.r32_opponent.toLowerCase()}">
+      <div class="path-header">
+        <div class="path-rank">#${rank}</div>
+        <div class="path-main">
+          <div class="opp">vs <strong>${p.r32_opponent}</strong>
+            <span class="opp-meta">(#${p.opp_fifa_rank} · ${p.opp_fifa_pts.toFixed(0)} pts · ${p.opp_qualification_route})</span>
+          </div>
+          <div class="finish">${p.iran_group_finish} · P(R32 win) = ${(p.p_iran_wins_r32_vs_this_opp*100).toFixed(1)}%</div>
+        </div>
+        <div class="path-r32"><strong>R32:</strong> ${p.r32_match}</div>
+        <div class="path-r16"><strong>R16:</strong> ${p.r16_match_if_advance}</div>
+        <div class="path-prob">
+          <div class="pct ${tier(pct)}">${pct.toFixed(2)}%</div>
+          <div class="detail">P(finish) ${(p.p_iran_finishes_this_position*100).toFixed(0)}% · P(opp) ${(p.p_this_opponent_given_finish*100).toFixed(1)}%</div>
+        </div>
+        <div class="path-chevron">▾</div>
+      </div>
+      <div class="path-body">
+        <div class="chain">
+          <h4>Qualification chain</h4>
+          ${chainHTML}
+          <div class="chain-total">
+            <div class="op">=</div>
+            <div class="label">Joint probability of this exact path</div>
+            <div class="pct">${pct.toFixed(2)}%</div>
+            <div class="chain-bar"><div style="width:${Math.max(2, Math.min(100, pct*5))}%; background:linear-gradient(90deg,#239F40,#4ade80);"></div></div>
+          </div>
+        </div>
+        ${groupMiniViz(p)}
+      </div>
+    </div>`;
+}
+
+function renderPaths(filter, search) {
+  const list = $("#paths-list");
+  list.innerHTML = "";
+  let shown = 0;
+  FULL_DATA.paths.forEach((p, i) => {
+    const isFirst = p.iran_group_finish.startsWith("1st");
+    if (filter === "1st" && !isFirst) return;
+    if (filter === "2nd" && isFirst) return;
+    if (search && !p.r32_opponent.toLowerCase().includes(search.toLowerCase())) return;
+    list.innerHTML += pathCard(p, i+1);
+    shown++;
+  });
+  $("#path-count").textContent = `Showing ${shown} of ${FULL_DATA.paths.length} paths`;
+  // wire up clicks
+  $$(".path-card .path-header").forEach(h => {
+    h.addEventListener("click", () => h.parentElement.classList.toggle("expanded"));
+  });
+}
+renderPaths("all", "");
+
+// Filters
+$$(".filter-bar button").forEach(b => {
+  b.addEventListener("click", () => {
+    $$(".filter-bar button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    renderPaths(b.dataset.filter, $("#search-input").value);
+  });
+});
+$("#search-input").addEventListener("input", e => {
+  const f = document.querySelector(".filter-bar button.active").dataset.filter;
+  renderPaths(f, e.target.value);
+});
+
+// Tab navigation
+$$(".nav button").forEach(b => {
+  b.addEventListener("click", () => {
+    $$(".nav button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    $$(".tab-pane").forEach(x => x.classList.remove("active"));
+    $(`#tab-${b.dataset.tab}`).classList.add("active");
+  });
+});
+</script>
+</body>
+</html>
