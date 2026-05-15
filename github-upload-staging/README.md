@@ -2,7 +2,7 @@
 
 A self-contained dashboard tracking IR Iran's Group G path through the 2026 World Cup, with Monte Carlo simulation of every route to the Round of 16.
 
-**Live site:** https://USERNAME.github.io/world-cup-2026/
+**Live site:** https://alirhino.github.io/world-cup-2026/
 
 ## What's inside
 
