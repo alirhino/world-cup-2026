@@ -1,0 +1,46 @@
+{
+  "source": "FIFA 2026 Competition Regulations + Wikipedia 2026 FIFA World Cup knockout stage (Annex C of regs gives 495 combos for 3rd-place qualifiers)",
+  "format_note": "48 teams -> top 2 of each of 12 groups + 8 best 3rd-placed teams = 32 knockout teams -> R32 -> R16 -> QF -> SF -> Final",
+  "round_of_32": {
+    "M73": {"matchup": "Runner-up A vs Runner-up B", "date": "2026-06-28", "kickoff_eastern": "15:00", "venue": "SoFi Stadium", "city": "Los Angeles"},
+    "M74": {"matchup": "Winner E vs Best 3rd (A/B/C/D/F)", "date": "2026-06-29", "kickoff_eastern": "16:30", "venue": "Gillette Stadium", "city": "Boston"},
+    "M75": {"matchup": "Winner F vs Runner-up C", "date": "2026-06-29", "kickoff_eastern": "21:00", "venue": "Estadio BBVA", "city": "Monterrey"},
+    "M76": {"matchup": "Winner C vs Runner-up F", "date": "2026-06-29", "kickoff_eastern": "13:00", "venue": "NRG Stadium", "city": "Houston"},
+    "M77": {"matchup": "Winner I vs Best 3rd (C/D/F/G/H)", "date": "2026-06-30", "kickoff_eastern": "17:00", "venue": "MetLife Stadium", "city": "New York/New Jersey"},
+    "M78": {"matchup": "Runner-up E vs Runner-up I", "date": "2026-06-30", "kickoff_eastern": "13:00", "venue": "AT&T Stadium", "city": "Dallas"},
+    "M79": {"matchup": "Winner A vs Best 3rd (C/E/F/H/I)", "date": "2026-06-30", "kickoff_eastern": "21:00", "venue": "Estadio Azteca", "city": "Mexico City"},
+    "M80": {"matchup": "Winner L vs Best 3rd (E/H/I/J/K)", "date": "2026-07-01", "kickoff_eastern": "12:00", "venue": "Mercedes-Benz Stadium", "city": "Atlanta"},
+    "M81": {"matchup": "Winner D vs Best 3rd (B/E/F/I/J)", "date": "2026-07-01", "kickoff_eastern": "20:00", "venue": "Levi's Stadium", "city": "San Francisco Bay Area"},
+    "M82": {"matchup": "Winner G vs Best 3rd (A/E/H/I/J)", "date": "2026-07-01", "kickoff_eastern": "16:00", "venue": "Lumen Field", "city": "Seattle", "iran_path": "Iran plays this match if they WIN Group G"},
+    "M83": {"matchup": "Runner-up K vs Runner-up L", "date": "2026-07-02", "kickoff_eastern": "19:00", "venue": "BMO Field", "city": "Toronto"},
+    "M84": {"matchup": "Winner H vs Runner-up J", "date": "2026-07-02", "kickoff_eastern": "15:00", "venue": "SoFi Stadium", "city": "Los Angeles"},
+    "M85": {"matchup": "Winner B vs Best 3rd (E/F/G/I/J)", "date": "2026-07-02", "kickoff_eastern": "23:00", "venue": "BC Place", "city": "Vancouver"},
+    "M86": {"matchup": "Winner J vs Runner-up H", "date": "2026-07-03", "kickoff_eastern": "18:00", "venue": "Hard Rock Stadium", "city": "Miami"},
+    "M87": {"matchup": "Winner K vs Best 3rd (D/E/I/J/L)", "date": "2026-07-03", "kickoff_eastern": "21:30", "venue": "GEHA Field at Arrowhead Stadium", "city": "Kansas City"},
+    "M88": {"matchup": "Runner-up D vs Runner-up G", "date": "2026-07-03", "kickoff_eastern": "14:00", "venue": "AT&T Stadium", "city": "Dallas (Arlington, TX)", "iran_path": "Iran plays this match if they FINISH 2ND in Group G"}
+  },
+  "round_of_16": {
+    "M89": {"matchup": "Winner M74 vs Winner M77", "date": "2026-07-04", "kickoff_eastern": "17:00", "venue": "Lincoln Financial Field", "city": "Philadelphia"},
+    "M90": {"matchup": "Winner M73 vs Winner M75", "date": "2026-07-04", "kickoff_eastern": "13:00", "venue": "NRG Stadium", "city": "Houston"},
+    "M91": {"matchup": "Winner M76 vs Winner M78", "date": "2026-07-05", "kickoff_eastern": "16:00", "venue": "MetLife Stadium", "city": "New York/New Jersey"},
+    "M92": {"matchup": "Winner M79 vs Winner M80", "date": "2026-07-05", "kickoff_eastern": "20:00", "venue": "Estadio Azteca", "city": "Mexico City"},
+    "M93": {"matchup": "Winner M83 vs Winner M84", "date": "2026-07-06", "kickoff_eastern": "15:00", "venue": "AT&T Stadium", "city": "Dallas (Arlington, TX)"},
+    "M94": {"matchup": "Winner M81 vs Winner M82", "date": "2026-07-06", "kickoff_eastern": "20:00", "venue": "Lumen Field", "city": "Seattle", "iran_path": "Iran plays this R16 match if they WON Group G and won their R32 (M82)"},
+    "M95": {"matchup": "Winner M86 vs Winner M88", "date": "2026-07-07", "kickoff_eastern": "12:00", "venue": "Mercedes-Benz Stadium", "city": "Atlanta", "iran_path": "Iran plays this R16 match if they FINISHED 2ND in Group G and won their R32 (M88)"},
+    "M96": {"matchup": "Winner M85 vs Winner M87", "date": "2026-07-07", "kickoff_eastern": "16:00", "venue": "BC Place", "city": "Vancouver"}
+  },
+  "iran_paths_to_r16_summary": {
+    "if_iran_wins_group_G": {
+      "R32": "M82 - Lumen Field, Seattle, July 1 (16:00 ET)",
+      "R32_opponent": "One of the 8 best 3rd-placed teams, specifically from Group A, E, H, I, or J (per Annex C)",
+      "R16_if_advance": "M94 - Lumen Field, Seattle, July 6 (20:00 ET)",
+      "R16_opponent_source": "Winner of M81 = (Group D winner) vs (best 3rd from B/E/F/I/J)"
+    },
+    "if_iran_finishes_2nd_in_group_G": {
+      "R32": "M88 - AT&T Stadium, Arlington/Dallas, July 3 (14:00 ET)",
+      "R32_opponent": "Runner-up of Group D (USA / Paraguay / Australia / Turkiye)",
+      "R16_if_advance": "M95 - Mercedes-Benz Stadium, Atlanta, July 7 (12:00 ET)",
+      "R16_opponent_source": "Winner of M86 = (Group J winner) vs (Group H runner-up)"
+    }
+  }
+}

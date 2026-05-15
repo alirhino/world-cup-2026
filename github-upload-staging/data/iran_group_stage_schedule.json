@@ -1,0 +1,46 @@
+{
+  "group": "G",
+  "members": ["BEL", "EGY", "IRN", "NZL"],
+  "source": "FIFA / Yahoo Sports / Al Jazeera, official 2026 WC schedule (final draw Dec 5, 2025)",
+  "iran_matches": [
+    {
+      "matchday": 1,
+      "date": "2026-06-15",
+      "kickoff_local": "18:00 PDT",
+      "kickoff_eastern": "21:00 EDT",
+      "home": "IRN",
+      "away": "NZL",
+      "venue": "SoFi Stadium (Los Angeles Stadium)",
+      "city": "Inglewood, CA",
+      "time_zone": "America/Los_Angeles"
+    },
+    {
+      "matchday": 2,
+      "date": "2026-06-21",
+      "kickoff_local": "12:00 PDT",
+      "kickoff_eastern": "15:00 EDT",
+      "home": "BEL",
+      "away": "IRN",
+      "venue": "SoFi Stadium (Los Angeles Stadium)",
+      "city": "Inglewood, CA",
+      "time_zone": "America/Los_Angeles"
+    },
+    {
+      "matchday": 3,
+      "date": "2026-06-26",
+      "kickoff_local": "20:00 PDT",
+      "kickoff_eastern": "23:00 EDT",
+      "home": "EGY",
+      "away": "IRN",
+      "venue": "Lumen Field (Seattle Stadium)",
+      "city": "Seattle, WA",
+      "time_zone": "America/Los_Angeles",
+      "note": "Pride Match designation (organized by Seattle host committee, not endorsed by FIFA). Iran and Egypt have objected to branding."
+    }
+  ],
+  "other_group_matches": [
+    {"date": "2026-06-15", "match": "BEL vs EGY", "venue": "Lumen Field, Seattle"},
+    {"date": "2026-06-21", "match": "NZL vs EGY", "venue": "BC Place, Vancouver"},
+    {"date": "2026-06-26", "match": "NZL vs BEL", "venue": "BC Place, Vancouver"}
+  ]
+}
